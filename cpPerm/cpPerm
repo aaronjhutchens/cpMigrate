@@ -1,0 +1,33 @@
+#!/bin/bash
+#################################
+#	cpPerm 1.0		#
+#	Correct ALL permissions	#
+#	Aaron Hutchens		#
+#################################
+
+
+
+for user in $(awk '{print $2}' /etc/trueuserdomains)
+do
+	homeDir=$(awk -F: '/^'$user':/ {print $6}' /etc/passwd)
+	
+	if [[ -z "$homeDir" ]]
+	then
+		echo "No entry for $user in /etc/passwd"
+	elif [[ ! -e /var/cpanel/users/$user ]]
+	then
+		echo "No user file found in /var/cpanel/users/"
+	else
+		echo "Setting ownerships for $user"
+		
+		chown -R $user:$user $homeDir
+		chmod 711 $homeDir
+		chown $user:nobody $homeDir/public_html $homeDir/.htpasswds
+		chown $user:mail $homeDir/etc $homeDir/etc/*/shadow $homeDir/etc/*/passwd
+
+		echo "Setting Permissions for $user"
+		find $homeDir -type f -exec chmod 644 {} \; -print
+		find $homeDir -type d -exec chmod 755 {} \; -print 
+		find $homeDir -type f \( -name "*.pl" -o -name "*.perl" \) -exec chmod 755 {} \; -print
+	fi
+done
